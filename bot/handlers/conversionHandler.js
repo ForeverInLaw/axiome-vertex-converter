@@ -225,12 +225,15 @@ const performConversion = async (ctx, fileInfo, targetFormat, quality, statusMes
     const stats = await fs.stat(convertedPath);
     const convertedSizeMb = stats.size / (1024 * 1024);
     
-    if (convertedSizeMb > 50) {
-      // Telegram API limit is 50 MB
+    // Use higher limit if local Bot API Server is configured (2000 MB vs 50 MB)
+    const maxUploadSizeMb = process.env.TELEGRAM_API_ROOT ? 2000 : 50;
+    
+    if (convertedSizeMb > maxUploadSizeMb) {
+      const apiType = process.env.TELEGRAM_API_ROOT ? 'локального Bot API Server' : 'Telegram API';
       await ctx.api.editMessageText(
         ctx.chat.id,
         statusMessageId,
-        `❌ Конвертированный файл слишком большой для отправки (${convertedSizeMb.toFixed(2)} МБ).\n\n⚠️ Telegram не поддерживает отправку файлов больше 50 МБ через API.\n\n💡 Попробуйте:\n• Выбрать другой формат\n• Уменьшить качество\n• Использовать более сжатый формат (например, MP3 вместо FLAC)`
+        `❌ Конвертированный файл слишком большой для отправки (${convertedSizeMb.toFixed(2)} МБ).\n\n⚠️ ${apiType} не поддерживает отправку файлов больше ${maxUploadSizeMb} МБ.\n\n💡 Попробуйте:\n• Выбрать другой формат\n• Уменьшить качество\n• Использовать более сжатый формат (например, MP3 вместо FLAC)`
       );
       
       await deleteFile(fileInfo.path);
