@@ -47,8 +47,15 @@ const checkLimits = async (userId, fileSizeMb) => {
   const maxDaily = limits.is_subscribed ? DAILY_LIMIT_SUBSCRIBED : DAILY_LIMIT_FREE;
   
   if (fileSizeMb > maxSize) {
-    const error = new Error(`Файл слишком большой. Максимум: ${maxSize} МБ`);
+    const error = new Error(
+      limits.is_subscribed 
+        ? `Файл слишком большой (${fileSizeMb.toFixed(2)} МБ). Максимум для PRO: ${maxSize} МБ`
+        : `Файл слишком большой (${fileSizeMb.toFixed(2)} МБ).\n\n🆓 Бесплатный лимит: ${maxSize} МБ\n💎 С подпиской PRO: до ${MAX_FILE_SIZE_MB} МБ\n\n💡 Оформите подписку для загрузки больших файлов!`
+    );
     error.code = 'FILE_TOO_LARGE';
+    error.maxSize = maxSize;
+    error.currentSize = fileSizeMb;
+    error.isSubscribed = limits.is_subscribed;
     throw error;
   }
   

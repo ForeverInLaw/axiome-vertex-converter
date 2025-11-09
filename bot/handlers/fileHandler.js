@@ -211,8 +211,8 @@ const handleFile = async (ctx, file) => {
     console.error('Error handling file:', error);
     
     if (error.code === 'FILE_TOO_LARGE') {
-      const maxSize = error.message.match(/\d+/)[0];
-      await ctx.reply(t(lang, 'errors.file_too_large', { max: maxSize }));
+      // Use detailed error message from limiter
+      await ctx.reply(error.message);
     } else if (error.code === 'DAILY_LIMIT_EXCEEDED') {
       await ctx.reply(t(lang, 'errors.daily_limit'));
     } else if (error.code === 'INSUFFICIENT_DISK_SPACE') {
