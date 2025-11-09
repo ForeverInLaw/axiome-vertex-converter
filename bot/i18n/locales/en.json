@@ -1,6 +1,6 @@
 {
   "start": {
-    "welcome": "👋 Welcome to Axiome Vertex Converter!\n\nI'll help you convert files:\n• Video (MP4, AVI, MKV, MOV, WEBM, etc.)\n• Audio (MP3, WAV, FLAC, AAC, OGG, etc.)\n• Images (JPG, PNG, WEBP, GIF, etc.)\n• Documents (PDF, DOCX, TXT, MD)\n\nSend me a file to get started!"
+    "welcome": "👋 Welcome to Axiome Vertex Converter!\n\nI'll help you convert files:\n• Video (MP4, AVI, MKV, MOV, WEBM, etc.)\n• Audio (MP3, WAV, FLAC, AAC, OGG, etc.)\n• Images (JPG, PNG, WEBP, GIF, HEIC, etc.)\n• Documents (PDF, DOCX, TXT, MD)\n\nSend me a file to get started!"
   },
   "subscribe": {
     "title": "💳 Subscription",
@@ -15,7 +15,7 @@
   },
   "help": {
     "title": "❓ Help",
-    "text": "**How to use:**\n1. Send a file to the bot\n2. Select conversion format\n3. Select quality (for video/images)\n4. Wait for processing\n5. Receive the converted file\n\n**📦 Batch processing:**\n• Send multiple files as album (up to 10)\n• All files will be converted simultaneously\n• Supports video, photos, documents\n\n**Supported formats:**\n\n📹 **Video:** MP4, AVI, MKV, MOV, WMV, FLV, WEBM\n🎵 **Audio:** MP3, WAV, FLAC, AAC, OGG, M4A\n🖼 **Images:** JPG, PNG, WEBP, GIF, TIFF\n📄 **Documents:** PDF, DOCX, TXT, MD\n\n**Limits:**\n• Free: 3 conv./day, up to 20 MB\n• Subscription: 100 conv./day, up to 200 MB"
+    "text": "**How to use:**\n1. Send a file to the bot\n2. Select conversion format\n3. Select quality (for video/images)\n4. Wait for processing\n5. Receive the converted file\n\n**📦 Batch processing:**\n• Send multiple files as album (up to 10)\n• All files will be converted simultaneously\n• Supports video, photos, documents\n\n**Supported formats:**\n\n📹 **Video:** MP4, AVI, MKV, MOV, WMV, FLV, WEBM\n🎵 **Audio:** MP3, WAV, FLAC, AAC, OGG, M4A\n🖼 **Images:** JPG, PNG, WEBP, GIF, TIFF, HEIC, HEIF\n📄 **Documents:** PDF, DOCX, TXT, MD\n\n**Limits:**\n• Free: 3 conv./day, up to 20 MB\n• Subscription: 100 conv./day, up to 200 MB"
   },
   "conversion": {
     "select_format": "Select conversion format:",

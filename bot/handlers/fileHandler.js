@@ -104,6 +104,8 @@ const validateFileType = async (filePath, expectedGroup) => {
       gif: { group: 'image', format: 'gif', mimeType: 'image/gif' },
       tiff: { group: 'image', format: 'tiff', mimeType: 'image/tiff' },
       tif: { group: 'image', format: 'tif', mimeType: 'image/tiff' },
+      heic: { group: 'image', format: 'heic', mimeType: 'image/heic' },
+      heif: { group: 'image', format: 'heif', mimeType: 'image/heif' },
       // Document
       pdf: { group: 'document', format: 'pdf', mimeType: 'application/pdf' },
       txt: { group: 'document', format: 'txt', mimeType: 'text/plain' },
@@ -128,7 +130,7 @@ const validateFileType = async (filePath, expectedGroup) => {
   const ALLOWED_TYPES = {
     video: ['video/mp4', 'video/x-msvideo', 'video/vnd.avi', 'video/x-matroska', 'video/quicktime', 'video/webm', 'video/x-flv', 'video/avi'],
     audio: ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/aac', 'audio/ogg', 'audio/x-m4a'],
-    image: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/tiff'],
+    image: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/tiff', 'image/heic', 'image/heif'],
     document: ['application/pdf', 'text/plain', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
   };
 

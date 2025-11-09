@@ -3,7 +3,7 @@ const { InlineKeyboard } = require('grammy');
 const FORMAT_GROUPS = {
   video: ['mp4', 'avi', 'mkv', 'mov', 'webm', 'flv'],
   audio: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a'],
-  image: ['jpg', 'png', 'webp', 'gif', 'tiff'],
+  image: ['jpg', 'png', 'webp', 'gif', 'tiff', 'heic', 'heif'],
   document: ['pdf', 'txt', 'md']
 };
 
