@@ -167,7 +167,7 @@ const performConversion = async (ctx, fileInfo, targetFormat, quality, statusMes
       await ctx.api.editMessageText(
         ctx.chat.id,
         statusMessageId,
-        `🔄 ${t(lang, 'conversion.converting', { format: targetFormat.toUpperCase() })}\n${progressBar} ${percent}%`
+        `${t(lang, 'conversion.converting', { format: targetFormat.toUpperCase() })}\n${progressBar} ${percent}%`
       );
     } catch (err) {
       // Ignore "message not modified" errors
@@ -179,7 +179,7 @@ const performConversion = async (ctx, fileInfo, targetFormat, quality, statusMes
     await ctx.api.editMessageText(
       ctx.chat.id,
       statusMessageId,
-      `🔄 ${t(lang, 'conversion.converting', { format: targetFormat.toUpperCase() })}\n░░░░░░░░░░░░░░░░░░░░ 0%`
+      `${t(lang, 'conversion.converting', { format: targetFormat.toUpperCase() })}\n░░░░░░░░░░░░░░░░░░░░ 0%`
     );
   } catch (err) {
     console.error('Error editing status message:', err.message);
