@@ -85,8 +85,9 @@ const handleFile = async (ctx, file) => {
 
     await ctx.reply(t(lang, 'conversion.processing'));
 
-    // Download file using Grammy API (secure, no token exposure)
-    await ctx.api.downloadFile(file.file_id, tempPath);
+    // Download file using Grammy files plugin
+    const fileObj = await ctx.getFile();
+    await fileObj.download(tempPath);
 
     const fileType = await validateFileType(tempPath);
 

@@ -27,7 +27,9 @@ const t = (lang, key, params = {}) => {
   }
   
   if (typeof value === 'string' && params) {
-    return value.replace(/{(\w+)}/g, (match, paramKey) => params[paramKey] || match);
+    return value.replace(/{(\w+)}/g, (match, paramKey) => 
+      paramKey in params ? params[paramKey] : match
+    );
   }
   
   return value;

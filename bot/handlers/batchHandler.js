@@ -88,7 +88,8 @@ const processBatch = async (mediaGroupId) => {
       const tempPath = path.join(userDir, fileName);
       
       // Download file
-      await ctx.api.downloadFile(fileData.file.file_id, tempPath);
+      const fileObj = await ctx.api.getFile(fileData.file.file_id);
+      await fileObj.download(tempPath);
       
       // Validate file type
       const fileType = await fileTypeFromFile(tempPath);
