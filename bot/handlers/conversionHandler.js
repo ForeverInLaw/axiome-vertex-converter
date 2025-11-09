@@ -22,7 +22,7 @@ const handleFormatSelection = async (ctx) => {
     const batchFiles = getBatchFiles(ctx);
     const firstFile = batchFiles[0];
     
-    if (firstFile.group === 'video' || firstFile.group === 'image') {
+    if (firstFile.group === 'video' || firstFile.group === 'image' || firstFile.group === 'audio') {
       ctx.session.targetFormat = targetFormat;
       await ctx.editMessageText(t(lang, 'conversion.select_quality'), {
         reply_markup: qualitySelector(lang)
@@ -43,7 +43,7 @@ const handleFormatSelection = async (ctx) => {
 
   const fileInfo = ctx.session.currentFile;
 
-  if (fileInfo.group === 'video' || fileInfo.group === 'image') {
+  if (fileInfo.group === 'video' || fileInfo.group === 'image' || fileInfo.group === 'audio') {
     ctx.session.targetFormat = targetFormat;
     await ctx.editMessageText(t(lang, 'conversion.select_quality'), {
       reply_markup: qualitySelector(lang)
