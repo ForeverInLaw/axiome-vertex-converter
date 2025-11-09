@@ -35,6 +35,7 @@ services:
     #       memory: 8G
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - ADMIN_USER_IDS=${ADMIN_USER_IDS}
       - DB_HOST=postgres
       - DB_PORT=5432
       - DB_NAME=converter_bot
