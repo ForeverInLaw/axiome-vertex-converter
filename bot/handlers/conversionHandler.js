@@ -149,12 +149,37 @@ const performConversion = async (ctx, fileInfo, targetFormat, quality, statusMes
   const lang = 'ru';
   const userId = ctx.from.id;
 
-  // Update status message
+  let currentProgress = 0;
+  let lastUpdateTime = 0;
+  
+  // Progress callback for converters
+  const updateProgress = async (percent) => {
+    currentProgress = percent;
+    const now = Date.now();
+    
+    // Update no more than once per 2 seconds to avoid API rate limits
+    if (now - lastUpdateTime < 2000 && percent < 100) return;
+    lastUpdateTime = now;
+    
+    const progressBar = '▓'.repeat(Math.floor(percent / 5)) + '░'.repeat(20 - Math.floor(percent / 5));
+    
+    try {
+      await ctx.api.editMessageText(
+        ctx.chat.id,
+        statusMessageId,
+        `🔄 ${t(lang, 'conversion.converting', { format: targetFormat.toUpperCase() })}\n${progressBar} ${percent}%`
+      );
+    } catch (err) {
+      // Ignore "message not modified" errors
+    }
+  };
+
+  // Update initial status message
   try {
     await ctx.api.editMessageText(
       ctx.chat.id,
       statusMessageId,
-      t(lang, 'conversion.converting', { format: targetFormat.toUpperCase() })
+      `🔄 ${t(lang, 'conversion.converting', { format: targetFormat.toUpperCase() })}\n░░░░░░░░░░░░░░░░░░░░ 0%`
     );
   } catch (err) {
     console.error('Error editing status message:', err.message);
@@ -168,13 +193,17 @@ const performConversion = async (ctx, fileInfo, targetFormat, quality, statusMes
     let convertedPath;
 
     if (fileInfo.group === 'video') {
-      convertedPath = await convertVideoWithTimeout(fileInfo.path, outputPath, targetFormat, quality);
+      convertedPath = await convertVideoWithTimeout(fileInfo.path, outputPath, targetFormat, quality, 300000, updateProgress);
     } else if (fileInfo.group === 'audio') {
-      convertedPath = await convertAudioWithTimeout(fileInfo.path, outputPath, targetFormat, quality);
+      convertedPath = await convertAudioWithTimeout(fileInfo.path, outputPath, targetFormat, quality, 300000, updateProgress);
     } else if (fileInfo.group === 'image') {
+      await updateProgress(50);
       convertedPath = await convertImageWithTimeout(fileInfo.path, outputPath, targetFormat, quality);
+      await updateProgress(100);
     } else if (fileInfo.group === 'document') {
+      await updateProgress(50);
       convertedPath = await convertDocumentWithTimeout(fileInfo.path, outputPath, targetFormat);
+      await updateProgress(100);
     } else {
       throw new Error('Unsupported file group');
     }
@@ -235,6 +264,21 @@ const performBatchConversion = async (ctx, batchFiles, targetFormat, quality, st
   const userId = ctx.from.id;
   
   const totalFiles = batchFiles.length;
+  
+  // Start progress timer
+  const startTime = Date.now();
+  const progressInterval = setInterval(async () => {
+    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+    try {
+      await ctx.api.editMessageText(
+        ctx.chat.id,
+        statusMessageId,
+        `🔄 Конвертирую ${totalFiles} файлов в ${targetFormat.toUpperCase()}...\n⏳ ${completed}/${totalFiles} завершено\n⏱ ${elapsedSeconds} сек.`
+      );
+    } catch (err) {
+      // Ignore "message not modified" errors
+    }
+  }, 5000);
   
   // Update status message
   try {

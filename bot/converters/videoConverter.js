@@ -9,7 +9,7 @@ const validatePath = (filePath) => {
   return resolvedPath.startsWith(tempDir);
 };
 
-const convertVideo = (inputPath, outputPath, targetFormat, quality = 'medium') => {
+const convertVideo = (inputPath, outputPath, targetFormat, quality = 'medium', progressCallback) => {
   return new Promise((resolve, reject) => {
     if (!validatePath(inputPath)) {
       return reject(new Error('Invalid input path - must be in temp directory'));
@@ -45,11 +45,14 @@ const convertVideo = (inputPath, outputPath, targetFormat, quality = 'medium') =
       })
       .on('progress', (progress) => {
         if (progress.percent) {
-          console.log(`Processing: ${Math.round(progress.percent)}% done`);
+          const percent = Math.round(progress.percent);
+          console.log(`Processing: ${percent}% done`);
+          if (progressCallback) progressCallback(percent);
         }
       })
       .on('end', () => {
         console.log('Video conversion finished');
+        if (progressCallback) progressCallback(100);
         resolve(outputPath);
       })
       .on('error', (err) => {
@@ -61,9 +64,9 @@ const convertVideo = (inputPath, outputPath, targetFormat, quality = 'medium') =
   });
 };
 
-const convertVideoWithTimeout = async (inputPath, outputPath, targetFormat, quality = 'medium', timeoutMs = 600000) => {
+const convertVideoWithTimeout = async (inputPath, outputPath, targetFormat, quality = 'medium', timeoutMs = 600000, progressCallback) => {
   return Promise.race([
-    convertVideo(inputPath, outputPath, targetFormat, quality),
+    convertVideo(inputPath, outputPath, targetFormat, quality, progressCallback),
     new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Conversion timeout')), timeoutMs)
     )

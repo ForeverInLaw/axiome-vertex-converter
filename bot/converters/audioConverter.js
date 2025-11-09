@@ -13,7 +13,7 @@ const validatePath = (filePath) => {
   return resolvedPath.startsWith(tempDir);
 };
 
-const convertAudio = (inputPath, outputPath, targetFormat, quality = 'medium') => {
+const convertAudio = (inputPath, outputPath, targetFormat, quality = 'medium', progressCallback) => {
   return new Promise((resolve, reject) => {
     if (!validatePath(inputPath)) {
       return reject(new Error('Invalid input path - must be in temp directory'));
@@ -44,11 +44,14 @@ const convertAudio = (inputPath, outputPath, targetFormat, quality = 'medium') =
       })
       .on('progress', (progress) => {
         if (progress.percent) {
-          console.log(`Processing: ${Math.round(progress.percent)}% done`);
+          const percent = Math.round(progress.percent);
+          console.log(`Processing: ${percent}% done`);
+          if (progressCallback) progressCallback(percent);
         }
       })
       .on('end', () => {
         console.log('Audio conversion finished');
+        if (progressCallback) progressCallback(100);
         resolve(outputPath);
       })
       .on('error', (err) => {
@@ -60,9 +63,9 @@ const convertAudio = (inputPath, outputPath, targetFormat, quality = 'medium') =
   });
 };
 
-const convertAudioWithTimeout = async (inputPath, outputPath, targetFormat, quality = 'medium', timeoutMs = 600000) => {
+const convertAudioWithTimeout = async (inputPath, outputPath, targetFormat, quality = 'medium', timeoutMs = 600000, progressCallback) => {
   return Promise.race([
-    convertAudio(inputPath, outputPath, targetFormat, quality),
+    convertAudio(inputPath, outputPath, targetFormat, quality, progressCallback),
     new Promise((_, reject) => 
       setTimeout(() => reject(new Error('Conversion timeout')), timeoutMs)
     )
