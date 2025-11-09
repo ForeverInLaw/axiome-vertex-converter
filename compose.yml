@@ -5,6 +5,15 @@ services:
     environment:
       TELEGRAM_API_ID: ${TELEGRAM_API_ID}
       TELEGRAM_API_HASH: ${TELEGRAM_API_HASH}
+    entrypoint: []
+    command: >
+      telegram-bot-api
+      --api-id=${TELEGRAM_API_ID}
+      --api-hash=${TELEGRAM_API_HASH}
+      --dir=/var/lib/telegram-bot-api
+      --temp-dir=/tmp/telegram-bot-api
+      --http-port=8081
+      --local
     volumes:
       - telegram_data:/var/lib/telegram-bot-api
     ports:
@@ -39,6 +48,7 @@ services:
   bot:
     build: ./bot
     container_name: converter_bot
+    user: "0:0"  # Run as root to access telegram-bot-api shared volume
     depends_on:
       telegram-bot-api:
         condition: service_started
@@ -54,6 +64,7 @@ services:
     environment:
       - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
       - TELEGRAM_API_ROOT=http://telegram-bot-api:8081
+      - TELEGRAM_BOT_API_FILES=/var/lib/telegram-bot-api
       - ADMIN_USER_IDS=${ADMIN_USER_IDS}
       - DB_HOST=postgres
       - DB_PORT=5432
@@ -71,6 +82,7 @@ services:
       - NODE_ENV=${NODE_ENV}
     volumes:
       - ./bot/temp:/usr/src/app/bot/temp
+      - telegram_data:/var/lib/telegram-bot-api
     networks:
       - internal
     restart: unless-stopped

@@ -141,7 +141,13 @@ const validateFileType = async (filePath, expectedGroup) => {
   return null;
 };
 
-const handleFile = async (ctx, file) => {
+/**
+ * Handle file upload, validation, and conversion process
+ * @param {Context} ctx - Grammy context
+ * @param {Object} file - File object from message (document, video, audio, or photo)
+ * @param {Bot} bot - Bot instance for accessing bot.api with proper apiRoot
+ */
+const handleFile = async (ctx, file, bot) => {
   const userId = ctx.from.id;
   const lang = 'ru';
 
@@ -168,10 +174,74 @@ const handleFile = async (ctx, file) => {
 
     await ctx.reply(t(lang, 'conversion.processing'));
 
-    // Download file using Grammy files plugin
+    // Download file bypassing grammY to use local Bot API Server directly
     console.log(`💾 Downloading file to: ${tempPath}`);
-    const fileObj = await ctx.getFile();
-    await fileObj.download(tempPath);
+    
+    const apiRoot = process.env.TELEGRAM_API_ROOT || 'https://api.telegram.org';
+    const token = process.env.TELEGRAM_BOT_TOKEN;
+    
+    console.log(`📥 Using API: ${apiRoot}`);
+    
+    // Step 1: Call getFile API directly to get file_path
+    // Use native fetch (Node.js 18+)
+    const getFileUrl = `${apiRoot}/bot${token}/getFile`;
+    const getFileResponse = await fetch(getFileUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file_id: file.file_id })
+    });
+    
+    if (!getFileResponse.ok) {
+      const errorText = await getFileResponse.text();
+      throw new Error(`getFile failed: ${getFileResponse.status} ${errorText}`);
+    }
+    
+    const getFileResult = await getFileResponse.json();
+    if (!getFileResult.ok) {
+      throw new Error(`getFile API error: ${getFileResult.description}`);
+    }
+    
+    const filePath = getFileResult.result.file_path;
+    console.log(`📄 Got file_path: ${filePath}`);
+    
+    // Step 2: Download/copy file
+    // For local Bot API Server, file_path is absolute path on shared volume
+    if (apiRoot.includes('telegram-bot-api')) {
+      // Local Bot API Server - read file directly from shared volume
+      console.log(`📂 Local API: copying file from shared volume`);
+      console.log(`   Source: ${filePath}`);
+      console.log(`   Destination: ${tempPath}`);
+      
+      // Check if file exists on shared volume
+      const fs = require('fs').promises;
+      try {
+        await fs.access(filePath);
+        await fs.copyFile(filePath, tempPath);
+        console.log(`✅ File copied successfully from shared volume`);
+      } catch (error) {
+        throw new Error(`Failed to copy file from shared volume: ${error.message}`);
+      }
+    } else {
+      // Standard Telegram API - download via HTTP
+      const downloadUrl = `${apiRoot}/file/bot${token}/${filePath}`;
+      console.log(`⬇️ Downloading from: ${downloadUrl.substring(0, 70)}...`);
+      
+      const downloadResponse = await fetch(downloadUrl);
+      
+      if (!downloadResponse.ok) {
+        throw new Error(`File download failed: ${downloadResponse.status} ${downloadResponse.statusText}`);
+      }
+      
+      // Save file to disk
+      const fileStream = require('fs').createWriteStream(tempPath);
+      await new Promise((resolve, reject) => {
+        downloadResponse.body.pipe(fileStream);
+        downloadResponse.body.on('error', reject);
+        fileStream.on('finish', resolve);
+      });
+      console.log(`✅ File downloaded successfully`);
+    }
+    
     console.log(`✅ File downloaded successfully`);
 
     console.log(`🔍 Validating file type...`);

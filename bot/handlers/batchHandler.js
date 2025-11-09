@@ -14,13 +14,14 @@ const MEDIA_GROUP_TIMEOUT = 1000;
  * Handle incoming file that might be part of a media group
  * @param {Context} ctx - Grammy context
  * @param {Object} file - File object from message
+ * @param {Bot} bot - Bot instance for accessing bot.api with proper apiRoot
  */
-const handlePotentialBatch = async (ctx, file) => {
+const handlePotentialBatch = async (ctx, file, bot) => {
   const mediaGroupId = ctx.message?.media_group_id;
   
   // Single file (not part of a group)
   if (!mediaGroupId) {
-    await handleFile(ctx, file);
+    await handleFile(ctx, file, bot);
     return;
   }
   
@@ -70,7 +71,7 @@ const processBatch = async (mediaGroupId) => {
   const group = mediaGroups.get(mediaGroupId);
   if (!group || group.files.length === 0) return;
   
-  const { files, ctx, userId } = group;
+  const { files, ctx, userId, bot } = group;
   const lang = 'ru';
   
   console.log(`Processing batch of ${files.length} files for media group ${mediaGroupId}`);
@@ -92,8 +93,8 @@ const processBatch = async (mediaGroupId) => {
       const fileName = sanitizeFilename(`batch_${index}_${timestamp}${ext}`);
       const tempPath = path.join(userDir, fileName);
       
-      // Download file
-      const fileObj = await ctx.api.getFile(fileData.file.file_id);
+      // Download file using bot.api to ensure local Bot API Server is used
+      const fileObj = await bot.api.getFile(fileData.file.file_id);
       await fileObj.download(tempPath);
       
       // Validate file type

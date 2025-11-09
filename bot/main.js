@@ -19,16 +19,20 @@ if (!token) {
 
 // Configure local Bot API Server if TELEGRAM_API_ROOT is set
 const apiRoot = process.env.TELEGRAM_API_ROOT;
-const bot = apiRoot 
-  ? new Bot(token, { client: { apiRoot } })
-  : new Bot(token);
+
+// Create bot with apiRoot for local Bot API Server
+const botConfig = apiRoot 
+  ? { client: { apiRoot } }
+  : {};
+
+const bot = new Bot(token, botConfig);
 
 console.log(apiRoot 
   ? `🚀 Bot using local API server: ${apiRoot} (file limit: 2000 MB)`
   : '🚀 Bot using standard Telegram API (file limit: 20 MB download, 50 MB upload)');
 
-// Enable files plugin for file downloading
-bot.api.config.use(hydrateFiles(token, apiRoot));
+// Enable files plugin with local API root configuration
+bot.api.config.use(hydrateFiles(token, apiRoot ? { apiRoot } : {}));
 
 bot.use(session({ initial: () => ({}) }));
 
@@ -74,20 +78,20 @@ bot.callbackQuery('cancel_conversion', async (ctx) => {
 });
 
 bot.on('message:document', async (ctx) => {
-  await handlePotentialBatch(ctx, ctx.message.document);
+  await handlePotentialBatch(ctx, ctx.message.document, bot);
 });
 
 bot.on('message:photo', async (ctx) => {
   const photo = ctx.message.photo[ctx.message.photo.length - 1];
-  await handlePotentialBatch(ctx, photo);
+  await handlePotentialBatch(ctx, photo, bot);
 });
 
 bot.on('message:video', async (ctx) => {
-  await handlePotentialBatch(ctx, ctx.message.video);
+  await handlePotentialBatch(ctx, ctx.message.video, bot);
 });
 
 bot.on('message:audio', async (ctx) => {
-  await handlePotentialBatch(ctx, ctx.message.audio);
+  await handlePotentialBatch(ctx, ctx.message.audio, bot);
 });
 
 bot.catch((err) => {
