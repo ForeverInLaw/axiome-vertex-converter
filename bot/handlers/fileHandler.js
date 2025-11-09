@@ -81,7 +81,7 @@ const validateFileType = async (filePath, expectedGroup) => {
   const ALLOWED_TYPES = {
     video: ['video/mp4', 'video/x-msvideo', 'video/x-matroska', 'video/quicktime', 'video/webm', 'video/x-flv'],
     audio: ['audio/mpeg', 'audio/wav', 'audio/flac', 'audio/aac', 'audio/ogg', 'audio/x-m4a'],
-    image: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/bmp', 'image/tiff'],
+    image: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/tiff'],
     document: ['application/pdf', 'text/plain', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
   };
 

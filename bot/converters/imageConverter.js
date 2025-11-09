@@ -44,7 +44,6 @@ const convertImage = async (inputPath, outputPath, targetFormat, quality = 'medi
     png: { compressionLevel: quality === 'original' ? 6 : quality === 'high' ? 7 : quality === 'medium' ? 8 : 9 },
     webp: { quality: settings.quality },
     gif: {},
-    bmp: {},
     tiff: { quality: settings.quality }
   };
 
