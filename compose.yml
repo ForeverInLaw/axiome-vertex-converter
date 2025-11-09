@@ -48,6 +48,7 @@ services:
       - MAX_FREE_FILE_SIZE_MB=${MAX_FREE_FILE_SIZE_MB}
       - DAILY_LIMIT_FREE=${DAILY_LIMIT_FREE}
       - DAILY_LIMIT_SUBSCRIBED=${DAILY_LIMIT_SUBSCRIBED}
+      - MAX_CONCURRENT_CONVERSIONS=${MAX_CONCURRENT_CONVERSIONS:-2}
       - NODE_ENV=${NODE_ENV}
     volumes:
       - ./bot/temp:/usr/src/app/bot/temp

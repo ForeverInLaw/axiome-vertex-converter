@@ -45,7 +45,9 @@ class ConversionQueue {
   }
 }
 
-// Global queue instance - 2 concurrent conversions max
-const conversionQueue = new ConversionQueue(2);
+// Global queue instance - configurable concurrent conversions
+const maxConcurrent = parseInt(process.env.MAX_CONCURRENT_CONVERSIONS || '2', 10);
+console.log(`Conversion queue: max ${maxConcurrent} concurrent conversions`);
+const conversionQueue = new ConversionQueue(maxConcurrent);
 
 module.exports = { conversionQueue };
