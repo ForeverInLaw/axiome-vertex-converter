@@ -23,7 +23,17 @@ const ensureTempDir = async () => {
 };
 
 const sanitizeFilename = (filename) => {
-  return filename.replace(/[^a-zA-Z0-9._-]/g, '_');
+  // Remove extension first
+  const ext = path.extname(filename);
+  const nameWithoutExt = path.basename(filename, ext);
+  
+  // Remove all non-ASCII and special characters
+  const cleaned = nameWithoutExt.replace(/[^a-zA-Z0-9._-]/g, '');
+  
+  // If nothing left after cleaning, use 'file'
+  const safeName = cleaned || 'file';
+  
+  return safeName + ext;
 };
 
 const getUserTempDir = async (userId) => {
