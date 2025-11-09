@@ -220,6 +220,27 @@ const performConversion = async (ctx, fileInfo, targetFormat, quality, statusMes
     }
 
     const convertedFile = new InputFile(convertedPath);
+    
+    // Check converted file size before sending
+    const stats = await fs.stat(convertedPath);
+    const convertedSizeMb = stats.size / (1024 * 1024);
+    
+    if (convertedSizeMb > 50) {
+      // Telegram API limit is 50 MB
+      await ctx.api.editMessageText(
+        ctx.chat.id,
+        statusMessageId,
+        `❌ Конвертированный файл слишком большой для отправки (${convertedSizeMb.toFixed(2)} МБ).\n\n⚠️ Telegram не поддерживает отправку файлов больше 50 МБ через API.\n\n💡 Попробуйте:\n• Выбрать другой формат\n• Уменьшить качество\n• Использовать более сжатый формат (например, MP3 вместо FLAC)`
+      );
+      
+      await deleteFile(fileInfo.path);
+      await deleteFile(convertedPath);
+      
+      delete ctx.session.currentFile;
+      delete ctx.session.targetFormat;
+      return;
+    }
+    
     await ctx.replyWithDocument(convertedFile);
 
     await incrementConversionCount(userId);
@@ -235,19 +256,22 @@ const performConversion = async (ctx, fileInfo, targetFormat, quality, statusMes
     console.error('Conversion error:', error);
     
     try {
-      if (error.message.includes('timeout')) {
-        await ctx.api.editMessageText(
-          ctx.chat.id,
-          statusMessageId,
-          t(lang, 'conversion.timeout')
-        );
+      let errorMessage;
+      
+      if (error.error_code === 413 || error.message.includes('Request Entity Too Large')) {
+        // Telegram API file size limit exceeded
+        errorMessage = `❌ Конвертированный файл слишком большой для отправки.\n\n⚠️ Telegram не поддерживает отправку файлов больше 50 МБ.\n\n💡 Попробуйте:\n• Выбрать другой формат\n• Уменьшить качество\n• Использовать более сжатый формат`;
+      } else if (error.message.includes('timeout')) {
+        errorMessage = t(lang, 'conversion.timeout');
       } else {
-        await ctx.api.editMessageText(
-          ctx.chat.id,
-          statusMessageId,
-          t(lang, 'conversion.error')
-        );
+        errorMessage = t(lang, 'conversion.error');
       }
+      
+      await ctx.api.editMessageText(
+        ctx.chat.id,
+        statusMessageId,
+        errorMessage
+      );
     } catch (err) {
       console.error('Error updating error message:', err.message);
     }
