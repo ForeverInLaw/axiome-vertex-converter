@@ -6,6 +6,7 @@ const { convertAudioWithTimeout } = require('../converters/audioConverter');
 const { convertImageWithTimeout } = require('../converters/imageConverter');
 const { convertDocumentWithTimeout } = require('../converters/documentConverter');
 const { incrementConversionCount, logConversion } = require('../services/database');
+const { conversionQueue } = require('../services/conversionQueue');
 const { deleteFile } = require('../services/cleanup');
 const { qualitySelector } = require('../keyboards/qualitySelector');
 const { isBatchMode, getBatchFiles, clearBatch } = require('./batchHandler');
@@ -50,7 +51,21 @@ const handleFormatSelection = async (ctx) => {
     await ctx.answerCallbackQuery();
   } else {
     await ctx.answerCallbackQuery();
-    await performConversion(ctx, fileInfo, targetFormat, 'medium');
+    
+    // Send status immediately and add to queue without blocking
+    const statusMsg = await ctx.reply(t(lang, 'conversion.processing'));
+    const queueStatus = conversionQueue.getStatus();
+    if (queueStatus.queued > 0) {
+      await ctx.reply(`⏳ В очереди: ${queueStatus.queued} задач. Ваш файл будет обработан.`);
+    }
+    
+    // Add to queue (non-blocking)
+    conversionQueue.add(async () => {
+      return await performConversion(ctx, fileInfo, targetFormat, 'medium');
+    }).catch(async (error) => {
+      console.error('Conversion error:', error);
+      await ctx.reply(t(lang, 'conversion.error'));
+    });
   }
 };
 
@@ -64,13 +79,28 @@ const handleQualitySelection = async (ctx) => {
   if (isBatchMode(ctx)) {
     const batchFiles = getBatchFiles(ctx);
     const targetFormat = ctx.session.targetFormat;
+    const lang = 'ru';
     
     if (!targetFormat) {
       await ctx.reply('Ошибка: формат не выбран');
       return;
     }
     
-    await performBatchConversion(ctx, batchFiles, targetFormat, quality);
+    // Send status immediately
+    await ctx.reply(`⏳ Обрабатываю ${batchFiles.length} файлов...`);
+    const queueStatus = conversionQueue.getStatus();
+    if (queueStatus.queued > 0) {
+      await ctx.reply(`⏳ В очереди: ${queueStatus.queued} задач. Ваши файлы будут обработаны.`);
+    }
+    
+    // Add to queue (non-blocking)
+    conversionQueue.add(async () => {
+      return await performBatchConversion(ctx, batchFiles, targetFormat, quality);
+    }).catch(async (error) => {
+      console.error('Batch conversion error:', error);
+      await ctx.reply('❌ Ошибка обработки пакета файлов');
+    });
+    
     return;
   }
 
@@ -82,8 +112,22 @@ const handleQualitySelection = async (ctx) => {
   
   const fileInfo = ctx.session.currentFile;
   const targetFormat = ctx.session.targetFormat;
+  const lang = 'ru';
 
-  await performConversion(ctx, fileInfo, targetFormat, quality);
+  // Send status immediately and add to queue without blocking
+  const statusMsg = await ctx.reply(t(lang, 'conversion.processing'));
+  const queueStatus = conversionQueue.getStatus();
+  if (queueStatus.queued > 0) {
+    await ctx.reply(`⏳ В очереди: ${queueStatus.queued} задач. Ваш файл будет обработан.`);
+  }
+  
+  // Add to queue (non-blocking)
+  conversionQueue.add(async () => {
+    return await performConversion(ctx, fileInfo, targetFormat, quality);
+  }).catch(async (error) => {
+    console.error('Conversion error:', error);
+    await ctx.reply(t(lang, 'conversion.error'));
+  });
 };
 
 const performConversion = async (ctx, fileInfo, targetFormat, quality) => {
