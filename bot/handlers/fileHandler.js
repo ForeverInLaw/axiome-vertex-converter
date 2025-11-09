@@ -1,10 +1,16 @@
 const fs = require('fs').promises;
 const path = require('path');
-const { fileTypeFromFile } = require('file-type');
 const { checkLimits } = require('../services/limiter');
 const { ensureDiskSpace } = require('../services/diskMonitor');
 const { formatSelector, getFormatGroup } = require('../keyboards/formatSelector');
 const { t } = require('../i18n');
+
+// file-type v19+ requires ESM, use dynamic import
+let fileTypeFromFile;
+(async () => {
+  const fileType = await import('file-type');
+  fileTypeFromFile = fileType.fileTypeFromFile;
+})();
 
 const TEMP_DIR = path.join(__dirname, '..', 'temp');
 
