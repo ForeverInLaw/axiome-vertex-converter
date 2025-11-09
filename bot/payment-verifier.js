@@ -59,9 +59,17 @@ async function checkTransactions() {
     }
 
     console.log(`Found ${data.result.txs.length} transactions`);
-
+    
+    let newCount = 0;
     for (const tx_response of data.result.txs) {
-      await processTransaction(tx_response);
+      const wasNew = await processTransaction(tx_response);
+      if (wasNew) newCount++;
+    }
+    
+    if (newCount > 0) {
+      console.log(`Processed ${newCount} NEW transactions`);
+    } else {
+      console.log('No new transactions found');
     }
   } catch (error) {
     console.error('Error checking transactions:', error.message);
@@ -70,7 +78,6 @@ async function checkTransactions() {
 
 async function processTransaction(tx_response) {
   const txHash = tx_response.hash;
-  console.log(`Processing transaction: ${txHash}`);
 
   const client = await pool.connect();
   try {
@@ -80,9 +87,11 @@ async function processTransaction(tx_response) {
     );
 
     if (result.rows.length > 0) {
-      console.log(`Transaction ${txHash} already processed. Skipping.`);
-      return;
+      // Already processed, skip silently
+      return false; // Not new
     }
+    
+    console.log(`Processing NEW transaction: ${txHash}`);
 
     const txBytes = Buffer.from(tx_response.tx, 'base64');
     const decodedTx = decodeTxRaw(txBytes);
@@ -95,7 +104,7 @@ async function processTransaction(tx_response) {
     );
 
     if (!transferMessageData || !memo) {
-      return;
+      return false; // Not relevant
     }
 
     console.log(`Found relevant transaction with memo: ${memo}`);
@@ -105,20 +114,20 @@ async function processTransaction(tx_response) {
     const userId = parseInt(memo, 10);
     if (isNaN(userId)) {
       console.log(`Skipping tx ${txHash}: memo "${memo}" is not a valid user ID.`);
-      return;
+      return false;
     }
 
     const amountData = transferMessage.amount.find((coin) => coin.denom === 'uaxm');
     if (!amountData) {
       console.log(`Skipping tx ${txHash}: no uaxm amount found.`);
-      return;
+      return false;
     }
 
     const amountAXM = parseFloat(amountData.amount) / 1000000;
 
     if (amountAXM < SUBSCRIPTION_PRICE_AXM) {
       console.log(`Skipping tx ${txHash}: amount ${amountAXM} AXM is less than required ${SUBSCRIPTION_PRICE_AXM} AXM`);
-      return;
+      return false;
     }
 
     console.log(`Valid subscription payment: ${amountAXM} AXM from user ${userId}`);
@@ -143,8 +152,11 @@ async function processTransaction(tx_response) {
     } catch (notifyError) {
       console.error(`Failed to notify user ${userId} for tx ${txHash}:`, notifyError.message);
     }
+    
+    return true; // Successfully processed new transaction
   } catch (error) {
     console.error(`Error processing transaction ${txHash}:`, error.message);
+    return false;
   } finally {
     client.release();
   }
