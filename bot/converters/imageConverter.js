@@ -3,9 +3,11 @@ const path = require('path');
 const fs = require('fs').promises;
 
 const QUALITY_LEVELS = {
-  high: 100,
-  medium: 80,
-  low: 60
+  original: { quality: 100, scale: 1.0 },
+  high: { quality: 95, scale: 1.0 },
+  medium: { quality: 85, scale: 0.75 },
+  low: { quality: 70, scale: 0.5 },
+  minimum: { quality: 60, scale: 0.35 }
 };
 
 const validatePath = (filePath) => {
@@ -22,21 +24,28 @@ const convertImage = async (inputPath, outputPath, targetFormat, quality = 'medi
     throw new Error('Invalid output path - must be in temp directory');
   }
 
-  const qualityValue = QUALITY_LEVELS[quality] || QUALITY_LEVELS.medium;
+  const settings = QUALITY_LEVELS[quality] || QUALITY_LEVELS.medium;
   
   let image = sharp(inputPath);
 
   const metadata = await image.metadata();
   console.log(`Image metadata: ${metadata.width}x${metadata.height}, format: ${metadata.format}`);
 
+  // Apply scaling if needed
+  if (settings.scale < 1.0) {
+    const newWidth = Math.round(metadata.width * settings.scale);
+    image = image.resize(newWidth, null, { fit: 'inside' });
+    console.log(`Scaling image to ${newWidth}px width (${Math.round(settings.scale * 100)}%)`);
+  }
+
   const formatOptions = {
-    jpeg: { quality: qualityValue },
-    jpg: { quality: qualityValue },
-    png: { compressionLevel: quality === 'high' ? 6 : quality === 'medium' ? 7 : 9 },
-    webp: { quality: qualityValue },
+    jpeg: { quality: settings.quality },
+    jpg: { quality: settings.quality },
+    png: { compressionLevel: quality === 'original' ? 6 : quality === 'high' ? 7 : quality === 'medium' ? 8 : 9 },
+    webp: { quality: settings.quality },
     gif: {},
     bmp: {},
-    tiff: { quality: qualityValue }
+    tiff: { quality: settings.quality }
   };
 
   const options = formatOptions[targetFormat.toLowerCase()] || {};

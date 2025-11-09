@@ -29,6 +29,11 @@ const convertVideo = (inputPath, outputPath, targetFormat, quality = 'medium') =
       command.videoCodec('libvpx').audioCodec('libvorbis');
     }
 
+    // Apply scaling if needed
+    if (settings.scale < 1.0) {
+      command.size(`${Math.round(1920 * settings.scale)}x?`);
+    }
+
     command
       .outputOptions([
         `-crf ${settings.crf}`,

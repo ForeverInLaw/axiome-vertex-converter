@@ -34,9 +34,11 @@
     "invalid_file": "❌ Invalid file type"
   },
   "quality": {
-    "high": "🔥 High (100%)",
-    "medium": "⚡ Medium (70%)",
-    "low": "💾 Low (30%, compressed)"
+    "original": "⭐ Original - no compression",
+    "high": "🔥 High - Full HD, 1080p",
+    "medium": "⚡ Medium - HD, 720p",
+    "low": "💾 Low - SD, 480p",
+    "minimum": "📱 Minimum - 360p, fast"
   },
   "buttons": {
     "convert": "📁 Convert file",
