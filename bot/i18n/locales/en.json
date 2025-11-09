@@ -1,0 +1,48 @@
+{
+  "start": {
+    "welcome": "👋 Welcome to Axiome Vertex Converter!\n\nI'll help you convert files:\n• Video (MP4, AVI, MKV, MOV, WEBM, etc.)\n• Audio (MP3, WAV, FLAC, AAC, OGG, etc.)\n• Images (JPG, PNG, WEBP, GIF, etc.)\n• Documents (PDF, DOCX, TXT, MD)\n\nSend me a file to get started!"
+  },
+  "subscribe": {
+    "title": "💳 Subscription",
+    "info": "**30-day subscription: 50 AXM**\n\n✅ PRO benefits:\n• Up to 100 conversions per day\n• Files up to 200 MB\n• Priority processing\n\n🆓 Free plan:\n• 3 conversions per day\n• Files up to 20 MB",
+    "instruction": "\n\n**How to pay:**\n1. Send **50 AXM** to address:\n`{wallet}`\n\n2. In the **memo** field specify: `{userId}`\n\n3. Subscription will be activated automatically in 2-3 minutes",
+    "active": "✅ You have an active subscription until {date}"
+  },
+  "status": {
+    "title": "📊 Your Status",
+    "subscribed": "✅ **Subscription:** active until {date}\n📦 **Used today:** {used} of {limit}\n💾 **Max file size:** 200 MB",
+    "free": "🆓 **Plan:** Free\n📦 **Used today:** {used} of {limit}\n💾 **Max file size:** 20 MB\n\n💡 Subscribe to remove limitations!"
+  },
+  "help": {
+    "title": "❓ Help",
+    "text": "**How to use:**\n1. Send a file to the bot\n2. Select conversion format\n3. Select quality (for video/images)\n4. Wait for processing\n5. Receive the converted file\n\n**Supported formats:**\n\n📹 **Video:** MP4, AVI, MKV, MOV, WMV, FLV, WEBM\n🎵 **Audio:** MP3, WAV, FLAC, AAC, OGG, M4A\n🖼 **Images:** JPG, PNG, WEBP, GIF, BMP, TIFF, SVG\n📄 **Documents:** PDF, DOCX, TXT, MD\n\n**Limits:**\n• Free: 3 conv./day, up to 20 MB\n• Subscription: 100 conv./day, up to 200 MB"
+  },
+  "conversion": {
+    "select_format": "Select conversion format:",
+    "select_quality": "Select quality:",
+    "processing": "⏳ Processing file...",
+    "converting": "🔄 Converting to {format}...",
+    "completed": "✅ Done! Sending file...",
+    "error": "❌ Conversion error. Try another file.",
+    "timeout": "⏱ Processing timeout. Try a smaller file.",
+    "unsupported": "❌ Format not supported"
+  },
+  "errors": {
+    "file_too_large": "❌ File too large. Maximum: {max} MB",
+    "daily_limit": "❌ Daily conversion limit exceeded.\n\n💡 Subscribe to remove limitations!",
+    "rate_limit": "⏰ Too many requests. Wait a minute.",
+    "invalid_file": "❌ Invalid file type"
+  },
+  "quality": {
+    "high": "🔥 High (100%)",
+    "medium": "⚡ Medium (70%)",
+    "low": "💾 Low (30%, compressed)"
+  },
+  "buttons": {
+    "convert": "📁 Convert file",
+    "subscribe": "💳 Subscribe",
+    "status": "📊 My Status",
+    "help": "❓ Help",
+    "back": "◀️ Back"
+  }
+}

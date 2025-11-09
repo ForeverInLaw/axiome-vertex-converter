@@ -1,0 +1,37 @@
+# Environment
+.env
+.env.local
+
+# Dependencies
+node_modules/
+bot/node_modules/
+package-lock.json
+pnpm-lock.yaml
+.pnpm-store/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Database
+db/data/
+
+# Temporary files
+bot/temp/
+temp/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Docker
+compose.override.yml
+
+docs/

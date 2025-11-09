@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: converter_db
+    environment:
+      POSTGRES_DB: converter_bot
+      POSTGRES_USER: botuser
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - ./db/data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U botuser"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+  bot:
+    build: ./bot
+    container_name: converter_bot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Resource limits removed - Docker will allocate dynamically based on host availability
+    # For production with dedicated server, consider adding:
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '4.0'
+    #       memory: 8G
+    environment:
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=converter_bot
+      - DB_USER=botuser
+      - DB_PASSWORD=${DB_PASSWORD}
+      - AXIOME_WALLET_ADDRESS=${AXIOME_WALLET_ADDRESS}
+      - AXIOME_API_ENDPOINT=${AXIOME_API_ENDPOINT}
+      - SUBSCRIPTION_PRICE_AXM=${SUBSCRIPTION_PRICE_AXM}
+      - MAX_FILE_SIZE_MB=${MAX_FILE_SIZE_MB}
+      - MAX_FREE_FILE_SIZE_MB=${MAX_FREE_FILE_SIZE_MB}
+      - DAILY_LIMIT_FREE=${DAILY_LIMIT_FREE}
+      - DAILY_LIMIT_SUBSCRIBED=${DAILY_LIMIT_SUBSCRIBED}
+      - NODE_ENV=${NODE_ENV}
+    volumes:
+      - ./bot/temp:/usr/src/app/bot/temp
+    networks:
+      - internal
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  internal:
+    driver: bridge
