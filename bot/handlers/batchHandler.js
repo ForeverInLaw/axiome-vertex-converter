@@ -85,7 +85,11 @@ const processBatch = async (mediaGroupId) => {
       
       const userDir = await getUserTempDir(userId);
       const timestamp = Date.now();
-      const fileName = sanitizeFilename(`batch_${index}_${timestamp}`);
+      
+      // Get extension from original filename or use default
+      const originalName = fileData.file.file_name || `file_${index}`;
+      const ext = path.extname(originalName) || '.tmp';
+      const fileName = sanitizeFilename(`batch_${index}_${timestamp}${ext}`);
       const tempPath = path.join(userDir, fileName);
       
       // Download file
