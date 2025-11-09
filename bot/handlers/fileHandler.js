@@ -22,16 +22,34 @@ const ensureTempDir = async () => {
   }
 };
 
+const transliterate = (text) => {
+  const cyrillic = 'абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ'.split('');
+  const latin = ['a','b','v','g','d','e','yo','zh','z','i','y','k','l','m','n','o','p','r','s','t','u','f','h','ts','ch','sh','sch','','y','','e','yu','ya','A','B','V','G','D','E','Yo','Zh','Z','I','Y','K','L','M','N','O','P','R','S','T','U','F','H','Ts','Ch','Sh','Sch','','Y','','E','Yu','Ya'];
+  
+  const map = {};
+  cyrillic.forEach((char, i) => {
+    map[char] = latin[i];
+  });
+  
+  return text.split('').map(char => char in map ? map[char] : char).join('');
+};
+
 const sanitizeFilename = (filename) => {
   // Remove extension first
   const ext = path.extname(filename);
   const nameWithoutExt = path.basename(filename, ext);
   
-  // Remove all non-ASCII and special characters
-  const cleaned = nameWithoutExt.replace(/[^a-zA-Z0-9._-]/g, '');
+  // Transliterate Cyrillic to Latin
+  const transliterated = transliterate(nameWithoutExt);
+  
+  // Remove special characters, keep alphanumeric, dots, dashes, underscores
+  const cleaned = transliterated.replace(/[^a-zA-Z0-9._-]/g, '_');
+  
+  // Remove multiple consecutive underscores
+  const normalized = cleaned.replace(/_+/g, '_').replace(/^_|_$/g, '');
   
   // If nothing left after cleaning, use 'file'
-  const safeName = cleaned || 'file';
+  const safeName = normalized || 'file';
   
   return safeName + ext;
 };
