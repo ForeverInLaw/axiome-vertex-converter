@@ -58,9 +58,12 @@ const getUserTempDir = async (userId) => {
   await ensureTempDir();
   const userDir = path.join(TEMP_DIR, `user_${userId}`);
   try {
-    await fs.access(userDir);
-  } catch {
-    await fs.mkdir(userDir, { mode: 0o700 });
+    await fs.mkdir(userDir, { recursive: true, mode: 0o700 });
+  } catch (error) {
+    // Ignore EEXIST error - directory already exists
+    if (error.code !== 'EEXIST') {
+      throw error;
+    }
   }
   return userDir;
 };
