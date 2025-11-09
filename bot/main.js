@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { Bot, GrammyError, HttpError, session } = require('grammy');
+const { hydrateFiles } = require('@grammyjs/files');
 const { startCommand } = require('./commands/start');
 const { subscribeCommand } = require('./commands/subscribe');
 const { statusCommand } = require('./commands/status');
@@ -17,6 +18,9 @@ if (!token) {
 }
 
 const bot = new Bot(token);
+
+// Enable files plugin for file downloading
+bot.api.config.use(hydrateFiles(token));
 
 bot.use(session({ initial: () => ({}) }));
 
