@@ -125,8 +125,9 @@ async function processTransaction(tx_response) {
 
     const amountAXM = parseFloat(amountData.amount) / 1000000;
 
-    if (amountAXM < SUBSCRIPTION_PRICE_AXM) {
-      console.log(`Skipping tx ${txHash}: amount ${amountAXM} AXM is less than required ${SUBSCRIPTION_PRICE_AXM} AXM`);
+    // Check for EXACT amount (not less, not more)
+    if (amountAXM !== SUBSCRIPTION_PRICE_AXM) {
+      console.log(`Skipping tx ${txHash}: amount ${amountAXM} AXM must be exactly ${SUBSCRIPTION_PRICE_AXM} AXM`);
       return false;
     }
 
