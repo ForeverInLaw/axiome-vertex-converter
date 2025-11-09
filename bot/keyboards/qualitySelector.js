@@ -1,13 +1,16 @@
 const { InlineKeyboard } = require('grammy');
 const { t } = require('../i18n');
 
-const qualitySelector = (lang = 'ru') => {
+const qualitySelector = (lang = 'ru', fileType = 'video') => {
+  // Map file group to i18n key
+  const typeKey = fileType === 'audio' ? 'audio' : fileType === 'image' ? 'image' : 'video';
+  
   return new InlineKeyboard()
-    .text(t(lang, 'quality.original'), 'quality:original').row()
-    .text(t(lang, 'quality.high'), 'quality:high').row()
-    .text(t(lang, 'quality.medium'), 'quality:medium').row()
-    .text(t(lang, 'quality.low'), 'quality:low').row()
-    .text(t(lang, 'quality.minimum'), 'quality:minimum').row()
+    .text(t(lang, `quality.${typeKey}.original`), 'quality:original').row()
+    .text(t(lang, `quality.${typeKey}.high`), 'quality:high').row()
+    .text(t(lang, `quality.${typeKey}.medium`), 'quality:medium').row()
+    .text(t(lang, `quality.${typeKey}.low`), 'quality:low').row()
+    .text(t(lang, `quality.${typeKey}.minimum`), 'quality:minimum').row()
     .text(t(lang, 'buttons.back'), 'cancel_conversion');
 };
 

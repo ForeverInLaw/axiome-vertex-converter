@@ -25,7 +25,7 @@ const handleFormatSelection = async (ctx) => {
     if (firstFile.group === 'video' || firstFile.group === 'image' || firstFile.group === 'audio') {
       ctx.session.targetFormat = targetFormat;
       await ctx.editMessageText(t(lang, 'conversion.select_quality'), {
-        reply_markup: qualitySelector(lang)
+        reply_markup: qualitySelector(lang, firstFile.group)
       });
       await ctx.answerCallbackQuery();
     } else {
@@ -46,7 +46,7 @@ const handleFormatSelection = async (ctx) => {
   if (fileInfo.group === 'video' || fileInfo.group === 'image' || fileInfo.group === 'audio') {
     ctx.session.targetFormat = targetFormat;
     await ctx.editMessageText(t(lang, 'conversion.select_quality'), {
-      reply_markup: qualitySelector(lang)
+      reply_markup: qualitySelector(lang, fileInfo.group)
     });
     await ctx.answerCallbackQuery();
   } else {
