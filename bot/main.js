@@ -17,10 +17,18 @@ if (!token) {
   throw new Error('TELEGRAM_BOT_TOKEN is not defined');
 }
 
-const bot = new Bot(token);
+// Configure local Bot API Server if TELEGRAM_API_ROOT is set
+const apiRoot = process.env.TELEGRAM_API_ROOT;
+const bot = apiRoot 
+  ? new Bot(token, { client: { apiRoot } })
+  : new Bot(token);
+
+console.log(apiRoot 
+  ? `🚀 Bot using local API server: ${apiRoot} (file limit: 2000 MB)`
+  : '🚀 Bot using standard Telegram API (file limit: 20 MB download, 50 MB upload)');
 
 // Enable files plugin for file downloading
-bot.api.config.use(hydrateFiles(token));
+bot.api.config.use(hydrateFiles(token, apiRoot));
 
 bot.use(session({ initial: () => ({}) }));
 
