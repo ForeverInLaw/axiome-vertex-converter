@@ -145,10 +145,9 @@ const performConversion = async (ctx, fileInfo, targetFormat, quality) => {
     );
   }
 
-  const outputPath = fileInfo.path.replace(
-    path.extname(fileInfo.path),
-    `_converted.${targetFormat}`
-  );
+  const inputExt = path.extname(fileInfo.path);
+  const basePath = fileInfo.path.substring(0, fileInfo.path.length - inputExt.length);
+  const outputPath = `${basePath}_converted.${targetFormat}`;
 
   try {
     let convertedPath;
