@@ -69,9 +69,51 @@ const getUserTempDir = async (userId) => {
 };
 
 const validateFileType = async (filePath, expectedGroup) => {
+  // Check file extension first as fallback
+  const fileExt = path.extname(filePath).toLowerCase().substring(1);
+  
   const fileType = await fileTypeFromFile(filePath);
   
+  // If file-type can't detect, use extension as fallback
   if (!fileType) {
+    console.log(`file-type library couldn't detect type, using extension: ${fileExt}`);
+    
+    // Extension-based fallback
+    const EXT_TO_GROUP = {
+      // Video
+      mp4: { group: 'video', format: 'mp4', mimeType: 'video/mp4' },
+      avi: { group: 'video', format: 'avi', mimeType: 'video/x-msvideo' },
+      mkv: { group: 'video', format: 'mkv', mimeType: 'video/x-matroska' },
+      mov: { group: 'video', format: 'mov', mimeType: 'video/quicktime' },
+      webm: { group: 'video', format: 'webm', mimeType: 'video/webm' },
+      flv: { group: 'video', format: 'flv', mimeType: 'video/x-flv' },
+      wmv: { group: 'video', format: 'wmv', mimeType: 'video/x-ms-wmv' },
+      // Audio
+      mp3: { group: 'audio', format: 'mp3', mimeType: 'audio/mpeg' },
+      wav: { group: 'audio', format: 'wav', mimeType: 'audio/wav' },
+      flac: { group: 'audio', format: 'flac', mimeType: 'audio/flac' },
+      aac: { group: 'audio', format: 'aac', mimeType: 'audio/aac' },
+      ogg: { group: 'audio', format: 'ogg', mimeType: 'audio/ogg' },
+      m4a: { group: 'audio', format: 'm4a', mimeType: 'audio/x-m4a' },
+      // Image
+      jpg: { group: 'image', format: 'jpg', mimeType: 'image/jpeg' },
+      jpeg: { group: 'image', format: 'jpeg', mimeType: 'image/jpeg' },
+      png: { group: 'image', format: 'png', mimeType: 'image/png' },
+      webp: { group: 'image', format: 'webp', mimeType: 'image/webp' },
+      gif: { group: 'image', format: 'gif', mimeType: 'image/gif' },
+      tiff: { group: 'image', format: 'tiff', mimeType: 'image/tiff' },
+      tif: { group: 'image', format: 'tif', mimeType: 'image/tiff' },
+      // Document
+      pdf: { group: 'document', format: 'pdf', mimeType: 'application/pdf' },
+      txt: { group: 'document', format: 'txt', mimeType: 'text/plain' },
+      md: { group: 'document', format: 'md', mimeType: 'text/plain' },
+      docx: { group: 'document', format: 'docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' }
+    };
+    
+    if (EXT_TO_GROUP[fileExt]) {
+      return EXT_TO_GROUP[fileExt];
+    }
+    
     return null;
   }
 
