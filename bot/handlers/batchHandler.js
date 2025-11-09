@@ -79,7 +79,8 @@ const processBatch = async (mediaGroupId) => {
     // Download all files in parallel
     const downloadPromises = files.map(async (fileData, index) => {
       const { getUserTempDir, sanitizeFilename } = require('./fileHandler');
-      const { fileTypeFromFile } = require('file-type');
+      const fileTypeModule = await import('file-type');
+      const { fileTypeFromFile } = fileTypeModule;
       const path = require('path');
       
       const userDir = await getUserTempDir(userId);
