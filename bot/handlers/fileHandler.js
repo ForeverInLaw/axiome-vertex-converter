@@ -76,7 +76,8 @@ const validateFileType = async (filePath, expectedGroup) => {
   
   // If file-type can't detect, use extension as fallback
   if (!fileType) {
-    console.log(`file-type library couldn't detect type, using extension: ${fileExt}`);
+    console.log(`⚠️  file-type library couldn't detect type`);
+    console.log(`   Trying extension-based fallback: .${fileExt}`);
     
     // Extension-based fallback
     const EXT_TO_GROUP = {
@@ -111,12 +112,16 @@ const validateFileType = async (filePath, expectedGroup) => {
     };
     
     if (EXT_TO_GROUP[fileExt]) {
+      console.log(`✅ Fallback successful: detected as ${EXT_TO_GROUP[fileExt].group} (${EXT_TO_GROUP[fileExt].format})`);
       return EXT_TO_GROUP[fileExt];
     }
     
+    console.log(`❌ Extension .${fileExt} not found in fallback mapping`);
     return null;
   }
 
+  console.log(`✅ file-type detected: ${fileType.mime} (.${fileType.ext})`);
+  
   const mimeType = fileType.mime;
   const ext = fileType.ext;
 
@@ -140,6 +145,11 @@ const handleFile = async (ctx, file) => {
   const userId = ctx.from.id;
   const lang = 'ru';
 
+  console.log(`📥 Received file from user ${userId}:`);
+  console.log(`   Name: ${file.file_name}`);
+  console.log(`   Size: ${(file.file_size / (1024 * 1024)).toFixed(2)} MB`);
+  console.log(`   Telegram mime_type: ${file.mime_type}`);
+
   try {
     const fileSize = file.file_size;
     const fileSizeMb = fileSize / (1024 * 1024);
@@ -159,18 +169,23 @@ const handleFile = async (ctx, file) => {
     await ctx.reply(t(lang, 'conversion.processing'));
 
     // Download file using Grammy files plugin
+    console.log(`💾 Downloading file to: ${tempPath}`);
     const fileObj = await ctx.getFile();
     await fileObj.download(tempPath);
+    console.log(`✅ File downloaded successfully`);
 
+    console.log(`🔍 Validating file type...`);
     const fileType = await validateFileType(tempPath);
 
     if (!fileType) {
+      console.log(`❌ File validation failed - unsupported file type`);
       await fs.unlink(tempPath);
       await ctx.reply(t(lang, 'errors.invalid_file'));
       return;
     }
 
-    console.log(`File validated: ${fileType.format} (${fileType.group})`);
+    console.log(`✅ File validated: ${fileType.format} (${fileType.group})`);
+    console.log(`   Detected mime: ${fileType.mimeType}`);
 
     ctx.session = ctx.session || {};
     ctx.session.currentFile = {
