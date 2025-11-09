@@ -3,7 +3,7 @@ const path = require('path');
 
 const TEMP_DIR = path.join(__dirname, '..', 'temp');
 const CLEANUP_INTERVAL_MS = 600000; // 10 minutes
-const FILE_MAX_AGE_MS = 1800000;    // 30 minutes
+const FILE_MAX_AGE_MS = 600000;     // 10 minutes
 
 const cleanupOldFiles = async () => {
   try {
@@ -74,7 +74,7 @@ const cleanupOldFiles = async () => {
 const startCleanupService = () => {
   cleanupOldFiles();
   setInterval(cleanupOldFiles, CLEANUP_INTERVAL_MS);
-  console.log('🧹 Cleanup service started (runs every 10 minutes, removes files older than 30 minutes)');
+  console.log('🧹 Cleanup service started (runs every 10 minutes, removes files older than 10 minutes)');
 };
 
 const deleteFile = async (filePath) => {
