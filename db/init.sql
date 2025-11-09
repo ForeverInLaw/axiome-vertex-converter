@@ -21,11 +21,11 @@ CREATE TABLE IF NOT EXISTS conversions (
 -- Transactions table
 CREATE TABLE IF NOT EXISTS transactions (
     id SERIAL PRIMARY KEY,
-    user_id BIGINT REFERENCES users(id),
+    user_id BIGINT REFERENCES users(id), -- Nullable: allows marking transactions for users who haven't started bot yet
     transaction_hash TEXT UNIQUE NOT NULL,
     amount_axm DECIMAL(20,6),
     subscription_days INTEGER DEFAULT 30,
-    status VARCHAR(20) DEFAULT 'completed',
+    status VARCHAR(20) DEFAULT 'completed', -- 'completed' = processed, 'skipped' = user not found
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

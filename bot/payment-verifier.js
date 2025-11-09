@@ -132,6 +132,23 @@ async function processTransaction(tx_response) {
 
     console.log(`Valid subscription payment: ${amountAXM} AXM from user ${userId}`);
 
+    // Check if user exists
+    const userCheck = await client.query('SELECT id FROM users WHERE id = $1', [userId]);
+    
+    if (userCheck.rows.length === 0) {
+      // User doesn't exist - mark transaction as processed but don't activate subscription
+      console.log(`User ${userId} not found in database. Transaction marked as processed without activation.`);
+      
+      // Insert transaction with NULL user_id to mark as processed
+      await client.query(
+        'INSERT INTO transactions (user_id, transaction_hash, amount_axm, status) VALUES ($1, $2, $3, $4)',
+        [null, txHash, amountAXM, 'skipped']
+      );
+      
+      return true; // Transaction marked as processed
+    }
+
+    // User exists - process normally
     await client.query(
       'INSERT INTO transactions (user_id, transaction_hash, amount_axm, status) VALUES ($1, $2, $3, $4)',
       [userId, txHash, amountAXM, 'completed']
