@@ -1,5 +1,6 @@
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path');
+const fs = require('fs').promises;
 
 const AUDIO_BITRATES = {
   high: '320k',
@@ -64,12 +65,91 @@ const convertAudio = (inputPath, outputPath, targetFormat, quality = 'medium', p
 };
 
 const convertAudioWithTimeout = async (inputPath, outputPath, targetFormat, quality = 'medium', timeoutMs = 600000, progressCallback) => {
-  return Promise.race([
-    convertAudio(inputPath, outputPath, targetFormat, quality, progressCallback),
-    new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Conversion timeout')), timeoutMs)
-    )
-  ]);
+  let ffmpegCommand;
+  let timeoutHandle;
+
+  const conversionPromise = new Promise(async (resolve, reject) => {
+    try {
+      // Validate paths
+      if (!validatePath(inputPath)) {
+        return reject(new Error('Invalid input path - must be in temp directory'));
+      }
+      if (!validatePath(outputPath)) {
+        return reject(new Error('Invalid output path - must be in temp directory'));
+      }
+
+      // Check if input file exists
+      try {
+        await fs.access(inputPath);
+        const stats = await fs.stat(inputPath);
+        console.log(`✅ Input file exists: ${inputPath} (${(stats.size / 1024 / 1024).toFixed(2)} MB)`);
+      } catch (error) {
+        console.error(`❌ Input file does not exist: ${inputPath}`);
+        return reject(new Error(`Input file not found: ${inputPath}`));
+      }
+
+      const bitrate = AUDIO_BITRATES[quality] || AUDIO_BITRATES.medium;
+      
+      ffmpegCommand = ffmpeg(inputPath)
+        .output(outputPath)
+        .audioBitrate(bitrate);
+
+      if (targetFormat === 'mp3') {
+        ffmpegCommand.audioCodec('libmp3lame');
+      } else if (targetFormat === 'aac') {
+        ffmpegCommand.audioCodec('aac');
+      } else if (targetFormat === 'ogg') {
+        ffmpegCommand.audioCodec('libvorbis');
+      } else if (targetFormat === 'flac') {
+        ffmpegCommand.audioCodec('flac');
+      }
+
+      ffmpegCommand
+        .on('start', (commandLine) => {
+          console.log('FFmpeg command:', commandLine);
+        })
+        .on('progress', (progress) => {
+          if (progress.percent) {
+            const percent = Math.round(progress.percent);
+            console.log(`Processing: ${percent}% done`);
+            if (progressCallback) progressCallback(percent);
+          }
+        })
+        .on('end', () => {
+          console.log('Audio conversion finished');
+          if (progressCallback) progressCallback(100);
+          if (timeoutHandle) clearTimeout(timeoutHandle);
+          resolve(outputPath);
+        })
+        .on('error', (err) => {
+          console.error('Audio conversion error:', err.message);
+          if (timeoutHandle) clearTimeout(timeoutHandle);
+          reject(err);
+        });
+
+      ffmpegCommand.run();
+    } catch (error) {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+      reject(error);
+    }
+  });
+
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutHandle = setTimeout(() => {
+      console.error('⏱️ Conversion timeout - killing FFmpeg process');
+      if (ffmpegCommand) {
+        try {
+          ffmpegCommand.kill('SIGKILL');
+          console.log('✅ FFmpeg process killed');
+        } catch (err) {
+          console.error('Failed to kill FFmpeg process:', err.message);
+        }
+      }
+      reject(new Error('Conversion timeout'));
+    }, timeoutMs);
+  });
+
+  return Promise.race([conversionPromise, timeoutPromise]);
 };
 
 module.exports = { convertAudio, convertAudioWithTimeout };
