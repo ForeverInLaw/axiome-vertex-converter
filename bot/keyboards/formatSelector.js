@@ -29,11 +29,16 @@ const formatSelector = (currentFormat) => {
     if (fmt !== currentFormat.toLowerCase()) {
       row.push({ text: fmt.toUpperCase(), callback_data: `format:${fmt}` });
       
-      if (row.length === 3 || i === formats.length - 1) {
+      if (row.length === 3) {
         keyboard.row(...row);
         row = [];
       }
     }
+  }
+  
+  // Add remaining buttons
+  if (row.length > 0) {
+    keyboard.row(...row);
   }
   
   keyboard.row({ text: '◀️ Назад', callback_data: 'cancel_conversion' });
