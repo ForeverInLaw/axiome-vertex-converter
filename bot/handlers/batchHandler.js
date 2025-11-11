@@ -1,5 +1,5 @@
 const { handleFile } = require('./fileHandler');
-const { formatSelector } = require('../keyboards/formatSelector');
+const { formatSelector, getFormatGroup } = require('../keyboards/formatSelector');
 const { qualitySelector } = require('../keyboards/qualitySelector');
 const { t } = require('../i18n');
 
@@ -31,6 +31,7 @@ const handlePotentialBatch = async (ctx, file, bot) => {
       files: [],
       ctx: ctx, // Store first context
       userId: ctx.from.id,
+      bot: bot, // Store bot instance for file downloads
     });
   }
   
@@ -103,12 +104,13 @@ const processBatch = async (mediaGroupId) => {
         throw new Error(`Invalid file type for file ${index}`);
       }
       
+      // Determine group by actual file format, not Telegram type
+      const fileGroup = getFormatGroup(fileType.ext) || 'document';
+      
       return {
         path: tempPath,
         format: fileType.ext,
-        group: fileData.type === 'photo' ? 'image' : 
-               fileData.type === 'video' ? 'video' :
-               fileData.type === 'audio' ? 'audio' : 'document',
+        group: fileGroup,
         sizeMb: fileData.file.file_size / (1024 * 1024),
         originalType: fileData.type,
       };

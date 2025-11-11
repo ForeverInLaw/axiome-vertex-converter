@@ -30,7 +30,26 @@ const handleFormatSelection = async (ctx) => {
       await ctx.answerCallbackQuery();
     } else {
       await ctx.answerCallbackQuery();
-      await performBatchConversion(ctx, batchFiles, targetFormat, 'medium');
+      
+      // Send initial status message
+      const queueStatus = conversionQueue.getStatus();
+      let statusText = `⏳ Обрабатываю ${batchFiles.length} файлов...`;
+      if (queueStatus.queued > 0) {
+        statusText += `\n⏳ В очереди: ${queueStatus.queued} задач`;
+      }
+      const statusMsg = await ctx.reply(statusText);
+      
+      // Add to queue (non-blocking)
+      conversionQueue.add(async () => {
+        return await performBatchConversion(ctx, batchFiles, targetFormat, 'medium', statusMsg.message_id);
+      }).catch(async (error) => {
+        console.error('Batch conversion error:', error);
+        try {
+          await ctx.api.editMessageText(ctx.chat.id, statusMsg.message_id, '❌ Ошибка обработки пакета файлов');
+        } catch {
+          await ctx.reply('❌ Ошибка обработки пакета файлов');
+        }
+      });
     }
     return;
   }
@@ -291,21 +310,6 @@ const performBatchConversion = async (ctx, batchFiles, targetFormat, quality, st
   const userId = ctx.from.id;
   
   const totalFiles = batchFiles.length;
-  
-  // Start progress timer
-  const startTime = Date.now();
-  const progressInterval = setInterval(async () => {
-    const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
-    try {
-      await ctx.api.editMessageText(
-        ctx.chat.id,
-        statusMessageId,
-        `🔄 Конвертирую ${totalFiles} файлов в ${targetFormat.toUpperCase()}...\n⏳ ${completed}/${totalFiles} завершено\n⏱ ${elapsedSeconds} сек.`
-      );
-    } catch (err) {
-      // Ignore "message not modified" errors
-    }
-  }, 5000);
   
   // Update status message
   try {
