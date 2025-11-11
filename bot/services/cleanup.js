@@ -145,7 +145,10 @@ const deleteFile = async (filePath) => {
   try {
     await fs.unlink(filePath);
   } catch (error) {
-    console.error(`Error deleting file ${filePath}:`, error.message);
+    // Ignore ENOENT errors (file already deleted)
+    if (error.code !== 'ENOENT') {
+      console.error(`Error deleting file ${filePath}:`, error.message);
+    }
   }
 };
 
