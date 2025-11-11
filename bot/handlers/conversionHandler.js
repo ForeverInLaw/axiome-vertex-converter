@@ -327,7 +327,8 @@ const performBatchConversion = async (ctx, batchFiles, targetFormat, quality, st
   let completed = 0;
 
   // Convert files in parallel (but limit to 3 concurrent)
-  const concurrencyLimit = 3;
+  // For documents, use sequential processing (LibreOffice can't run in parallel)
+  const concurrencyLimit = batchFiles[0].group === 'document' ? 1 : 3;
   for (let i = 0; i < batchFiles.length; i += concurrencyLimit) {
     const batch = batchFiles.slice(i, i + concurrencyLimit);
     

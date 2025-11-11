@@ -99,7 +99,16 @@ const processBatch = async (mediaGroupId) => {
       await fileObj.download(tempPath);
       
       // Validate file type
-      const fileType = await fileTypeFromFile(tempPath);
+      let fileType = await fileTypeFromFile(tempPath);
+      
+      // Fallback to extension from filename for plain text files (txt, md, etc)
+      if (!fileType && originalName) {
+        const extMatch = path.extname(originalName).toLowerCase();
+        if (extMatch) {
+          fileType = { ext: extMatch.replace('.', ''), mime: 'application/octet-stream' };
+        }
+      }
+      
       if (!fileType) {
         throw new Error(`Invalid file type for file ${index}`);
       }
