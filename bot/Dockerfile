@@ -3,10 +3,11 @@ FROM node:20-slim
 # Run as non-root user
 RUN useradd -m -u 1001 botuser
 
-# Install FFmpeg, LibreOffice, Sharp dependencies, libheif for HEIC/HEIF support
+# Install FFmpeg, LibreOffice, Pandoc, Sharp dependencies, libheif for HEIC/HEIF support
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     libreoffice \
+    pandoc \
     libvips-dev \
     libheif-examples \
     && rm -rf /var/lib/apt/lists/*
