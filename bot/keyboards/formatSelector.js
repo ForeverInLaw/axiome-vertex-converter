@@ -3,8 +3,8 @@ const { InlineKeyboard } = require('grammy');
 const FORMAT_GROUPS = {
   video: ['mp4', 'avi', 'mkv', 'mov', 'webm', 'flv'],
   audio: ['mp3', 'wav', 'flac', 'aac', 'ogg', 'm4a'],
-  image: ['jpg', 'png', 'webp', 'gif', 'tiff', 'heic', 'heif'],
-  document: ['pdf', 'txt', 'md']
+  image: ['jpg', 'png', 'webp', 'gif', 'tiff', 'heic', 'heif', 'svg'],
+  document: ['pdf', 'txt', 'md', 'docx']
 };
 
 const getFormatGroup = (format) => {
@@ -29,11 +29,16 @@ const formatSelector = (currentFormat) => {
     if (fmt !== currentFormat.toLowerCase()) {
       row.push({ text: fmt.toUpperCase(), callback_data: `format:${fmt}` });
       
-      if (row.length === 3 || i === formats.length - 1) {
+      if (row.length === 3) {
         keyboard.row(...row);
         row = [];
       }
     }
+  }
+  
+  // Add remaining buttons
+  if (row.length > 0) {
+    keyboard.row(...row);
   }
   
   keyboard.row({ text: '◀️ Назад', callback_data: 'cancel_conversion' });

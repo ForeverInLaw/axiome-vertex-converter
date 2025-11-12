@@ -1,5 +1,5 @@
 const { handleFile } = require('./fileHandler');
-const { formatSelector } = require('../keyboards/formatSelector');
+const { formatSelector, getFormatGroup } = require('../keyboards/formatSelector');
 const { qualitySelector } = require('../keyboards/qualitySelector');
 const { t } = require('../i18n');
 
@@ -31,6 +31,7 @@ const handlePotentialBatch = async (ctx, file, bot) => {
       files: [],
       ctx: ctx, // Store first context
       userId: ctx.from.id,
+      bot: bot, // Store bot instance for file downloads
     });
   }
   
@@ -48,8 +49,13 @@ const handlePotentialBatch = async (ctx, file, bot) => {
   
   // Set new timeout - if no more files arrive in 1 sec, process the group
   group.timeout = setTimeout(async () => {
-    await processBatch(mediaGroupId);
-    mediaGroups.delete(mediaGroupId);
+    try {
+      await processBatch(mediaGroupId);
+    } finally {
+      // Always delete from map, even if processing fails
+      mediaGroups.delete(mediaGroupId);
+      console.log(`Cleared media group ${mediaGroupId} from memory`);
+    }
   }, MEDIA_GROUP_TIMEOUT);
 };
 
@@ -69,12 +75,16 @@ const getFileType = (file) => {
  */
 const processBatch = async (mediaGroupId) => {
   const group = mediaGroups.get(mediaGroupId);
-  if (!group || group.files.length === 0) return;
+  if (!group || group.files.length === 0) {
+    console.log(`Media group ${mediaGroupId} is empty or not found, skipping`);
+    return;
+  }
   
   const { files, ctx, userId, bot } = group;
   const lang = 'ru';
   
   console.log(`Processing batch of ${files.length} files for media group ${mediaGroupId}`);
+  console.log(`File message IDs: ${files.map(f => f.messageId).join(', ')}`);
   
   try {
     // Download all files in parallel
@@ -90,7 +100,8 @@ const processBatch = async (mediaGroupId) => {
       // Get extension from original filename or use default
       const originalName = fileData.file.file_name || `file_${index}`;
       const ext = path.extname(originalName) || '.tmp';
-      const fileName = sanitizeFilename(`batch_${index}_${timestamp}${ext}`);
+      // Include media_group_id to avoid conflicts when multiple groups processed simultaneously
+      const fileName = sanitizeFilename(`batch_${mediaGroupId}_${index}_${timestamp}${ext}`);
       const tempPath = path.join(userDir, fileName);
       
       // Download file using bot.api to ensure local Bot API Server is used
@@ -98,17 +109,35 @@ const processBatch = async (mediaGroupId) => {
       await fileObj.download(tempPath);
       
       // Validate file type
-      const fileType = await fileTypeFromFile(tempPath);
+      let fileType = await fileTypeFromFile(tempPath);
+      
+      // Fallback to extension from filename for plain text files (txt, md, etc)
+      if (!fileType && originalName) {
+        const extMatch = path.extname(originalName).toLowerCase();
+        if (extMatch) {
+          fileType = { ext: extMatch.replace('.', ''), mime: 'application/octet-stream' };
+        }
+      }
+      
       if (!fileType) {
         throw new Error(`Invalid file type for file ${index}`);
       }
       
+      // Rename file with correct extension if it was .tmp
+      let finalPath = tempPath;
+      if (ext === '.tmp' && fileType.ext) {
+        const fs = require('fs').promises;
+        finalPath = tempPath.replace('.tmp', `.${fileType.ext}`);
+        await fs.rename(tempPath, finalPath);
+      }
+      
+      // Determine group by actual file format, not Telegram type
+      const fileGroup = getFormatGroup(fileType.ext) || 'document';
+      
       return {
-        path: tempPath,
+        path: finalPath,
         format: fileType.ext,
-        group: fileData.type === 'photo' ? 'image' : 
-               fileData.type === 'video' ? 'video' :
-               fileData.type === 'audio' ? 'audio' : 'document',
+        group: fileGroup,
         sizeMb: fileData.file.file_size / (1024 * 1024),
         originalType: fileData.type,
       };
@@ -122,12 +151,15 @@ const processBatch = async (mediaGroupId) => {
     
     if (uniqueGroups.length > 1) {
       await ctx.reply(`⚠️ Файлы разных типов (${uniqueGroups.join(', ')}). Обработка по отдельности...`);
-      // Process individually
+      // Process individually - store each file by message ID
+      ctx.session = ctx.session || {};
+      ctx.session.pendingFiles = ctx.session.pendingFiles || {};
+      
       for (const fileData of downloadedFiles) {
-        ctx.session = ctx.session || {};
-        ctx.session.currentFile = fileData;
         const keyboard = formatSelector(fileData.format);
-        await ctx.reply(t(lang, 'conversion.select_format'), { reply_markup: keyboard });
+        const msg = await ctx.reply(t(lang, 'conversion.select_format'), { reply_markup: keyboard });
+        // Store file data by message ID for later retrieval
+        ctx.session.pendingFiles[msg.message_id] = fileData;
       }
       return;
     }
@@ -137,13 +169,18 @@ const processBatch = async (mediaGroupId) => {
     
     await ctx.reply(`📦 Получено ${files.length} файлов. Выберите формат для конвертации всех:`);
     
-    // Store batch in session
+    // Store batch in session by message ID (to support multiple batches)
     ctx.session = ctx.session || {};
-    ctx.session.batchFiles = downloadedFiles;
-    ctx.session.batchMode = true;
+    ctx.session.pendingBatches = ctx.session.pendingBatches || {};
     
     const keyboard = formatSelector(firstFile.format);
-    await ctx.reply(t(lang, 'conversion.select_format'), { reply_markup: keyboard });
+    const msg = await ctx.reply(t(lang, 'conversion.select_format'), { reply_markup: keyboard });
+    
+    // Store batch files by message ID
+    ctx.session.pendingBatches[msg.message_id] = {
+      files: downloadedFiles,
+      mediaGroupId: mediaGroupId,
+    };
     
   } catch (error) {
     console.error('Error processing batch:', error);
@@ -152,26 +189,27 @@ const processBatch = async (mediaGroupId) => {
 };
 
 /**
- * Check if current conversion is batch mode
+ * Check if current conversion is batch mode by message ID
  */
-const isBatchMode = (ctx) => {
-  return ctx.session?.batchMode === true && ctx.session?.batchFiles?.length > 0;
+const isBatchMode = (ctx, messageId) => {
+  if (!messageId || !ctx.session?.pendingBatches) return false;
+  return ctx.session.pendingBatches[messageId] !== undefined;
 };
 
 /**
- * Get batch files from session
+ * Get batch files from session by message ID
  */
-const getBatchFiles = (ctx) => {
-  return ctx.session?.batchFiles || [];
+const getBatchFiles = (ctx, messageId) => {
+  if (!messageId || !ctx.session?.pendingBatches) return null;
+  return ctx.session.pendingBatches[messageId]?.files || null;
 };
 
 /**
- * Clear batch from session
+ * Clear batch from session by message ID
  */
-const clearBatch = (ctx) => {
-  if (ctx.session) {
-    delete ctx.session.batchFiles;
-    delete ctx.session.batchMode;
+const clearBatch = (ctx, messageId) => {
+  if (ctx.session?.pendingBatches && messageId) {
+    delete ctx.session.pendingBatches[messageId];
   }
 };
 

@@ -71,29 +71,79 @@ const convertImage = async (inputPath, outputPath, targetFormat, quality = 'medi
   const metadata = await image.metadata();
   console.log(`Image metadata: ${metadata.width}x${metadata.height}, format: ${metadata.format}`);
 
-  // Apply scaling if needed
-  if (settings.scale < 1.0) {
-    const newWidth = Math.round(metadata.width * settings.scale);
-    image = image.resize(newWidth, null, { fit: 'inside' });
-    console.log(`Scaling image to ${newWidth}px width (${Math.round(settings.scale * 100)}%)`);
+  // Special handling for SVG - render at higher resolution
+  if (metadata.format === 'svg') {
+    // Always render SVG at 2K resolution (2048px) for high quality
+    const svgRenderWidth = 2048;
+    image = sharp(workingPath, {
+      density: Math.round((svgRenderWidth / metadata.width) * 72) // DPI calculation
+    });
+    console.log(`SVG will be rendered at ${svgRenderWidth}px width (2K) for high quality`);
+    
+    // Then apply quality scaling if needed
+    if (settings.scale < 1.0) {
+      const finalWidth = Math.round(svgRenderWidth * settings.scale);
+      image = image.resize(finalWidth, null, { fit: 'inside' });
+      console.log(`Scaling rendered SVG to ${finalWidth}px width (${Math.round(settings.scale * 100)}%)`);
+    }
+  } else {
+    // Apply scaling for non-SVG images
+    if (settings.scale < 1.0) {
+      const newWidth = Math.round(metadata.width * settings.scale);
+      image = image.resize(newWidth, null, { fit: 'inside' });
+      console.log(`Scaling image to ${newWidth}px width (${Math.round(settings.scale * 100)}%)`);
+    }
   }
 
-  const formatOptions = {
-    jpeg: { quality: settings.quality },
-    jpg: { quality: settings.quality },
-    png: { compressionLevel: quality === 'original' ? 6 : quality === 'high' ? 7 : quality === 'medium' ? 8 : 9 },
-    webp: { quality: settings.quality },
-    gif: {},
-    tiff: { quality: settings.quality },
-    heic: { quality: settings.quality },
-    heif: { quality: settings.quality }
-  };
+  // Convert to HEIC/HEIF using heif-enc (libheif encoder)
+  if (targetFormat === 'heic' || targetFormat === 'heif') {
+    console.log(`Converting to ${targetFormat.toUpperCase()} using heif-enc...`);
+    
+    // First convert to PNG via Sharp (with any resizing/processing)
+    const tempPng = outputPath.replace(/\.(heic|heif)$/i, '_temp_for_heic.png');
+    await image
+      .png({ compressionLevel: 6 })
+      .toFile(tempPng);
+    
+    console.log('Intermediate PNG created, encoding to HEIC...');
+    
+    // Then convert PNG to HEIC using heif-enc
+    try {
+      const qualityParam = quality === 'lossless' ? '-L -p chroma=444 --matrix_coefficients=0' : `-q ${settings.quality}`;
+      execSync(`heif-enc ${qualityParam} -o "${outputPath}" "${tempPng}"`, {
+        encoding: 'utf-8',
+        stdio: 'pipe'
+      });
+      console.log(`Successfully encoded to ${targetFormat.toUpperCase()} (quality: ${settings.quality})`);
+    } catch (error) {
+      console.error('heif-enc error:', error.message);
+      throw new Error(`HEIC encoding failed: ${error.message}`);
+    } finally {
+      // Clean up temp PNG
+      try {
+        await fs.unlink(tempPng);
+        console.log('Cleaned up temporary PNG file');
+      } catch (err) {
+        console.warn('Failed to clean up temp PNG:', err.message);
+      }
+    }
+  } else {
+    // Use Sharp for other formats
+    const formatOptions = {
+      jpeg: { quality: settings.quality },
+      jpg: { quality: settings.quality },
+      png: { compressionLevel: quality === 'original' ? 6 : quality === 'high' ? 7 : quality === 'medium' ? 8 : 9 },
+      webp: { quality: settings.quality },
+      gif: {},
+      tiff: { quality: settings.quality }
+    };
 
-  const options = formatOptions[targetFormat.toLowerCase()] || {};
+    const options = formatOptions[targetFormat.toLowerCase()] || {};
 
-  await image
-    .toFormat(targetFormat, options)
-    .toFile(outputPath);
+    await image
+      .toFormat(targetFormat, options)
+      .toFile(outputPath);
+  }
 
   // Clean up temporary HEIC conversion file
   if (tempHeicJpg) {
