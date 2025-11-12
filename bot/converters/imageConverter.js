@@ -71,11 +71,28 @@ const convertImage = async (inputPath, outputPath, targetFormat, quality = 'medi
   const metadata = await image.metadata();
   console.log(`Image metadata: ${metadata.width}x${metadata.height}, format: ${metadata.format}`);
 
-  // Apply scaling if needed
-  if (settings.scale < 1.0) {
-    const newWidth = Math.round(metadata.width * settings.scale);
-    image = image.resize(newWidth, null, { fit: 'inside' });
-    console.log(`Scaling image to ${newWidth}px width (${Math.round(settings.scale * 100)}%)`);
+  // Special handling for SVG - render at higher resolution
+  if (metadata.format === 'svg') {
+    // Always render SVG at 2K resolution (2048px) for high quality
+    const svgRenderWidth = 2048;
+    image = sharp(workingPath, {
+      density: Math.round((svgRenderWidth / metadata.width) * 72) // DPI calculation
+    });
+    console.log(`SVG will be rendered at ${svgRenderWidth}px width (2K) for high quality`);
+    
+    // Then apply quality scaling if needed
+    if (settings.scale < 1.0) {
+      const finalWidth = Math.round(svgRenderWidth * settings.scale);
+      image = image.resize(finalWidth, null, { fit: 'inside' });
+      console.log(`Scaling rendered SVG to ${finalWidth}px width (${Math.round(settings.scale * 100)}%)`);
+    }
+  } else {
+    // Apply scaling for non-SVG images
+    if (settings.scale < 1.0) {
+      const newWidth = Math.round(metadata.width * settings.scale);
+      image = image.resize(newWidth, null, { fit: 'inside' });
+      console.log(`Scaling image to ${newWidth}px width (${Math.round(settings.scale * 100)}%)`);
+    }
   }
 
   // Convert to HEIC/HEIF using heif-enc (libheif encoder)
